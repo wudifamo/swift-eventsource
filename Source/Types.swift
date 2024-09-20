@@ -53,7 +53,7 @@ public protocol EventHandler {
     func onOpened()
 
     /// EventSource calls this method when the stream connection has been closed.
-    func onClosed()
+    func onClosed(str: String?)
 
     /**
      EventSource calls this method when it has received a new event from the stream.

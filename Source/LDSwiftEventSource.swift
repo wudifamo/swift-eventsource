@@ -219,7 +219,7 @@ class EventSourceDelegate: NSObject, URLSessionDataDelegate {
             self.readyState = .shutdown
             self.sessionTask?.cancel()
             if previousState == .open {
-                self.config.handler.onClosed()
+                self.config.handler.onClosed(str: nil)
             }
             self.urlSession?.invalidateAndCancel()
             self.urlSession = nil
@@ -270,6 +270,7 @@ class EventSourceDelegate: NSObject, URLSessionDataDelegate {
     public func urlSession(_ session: URLSession,
                            task: URLSessionTask,
                            didCompleteWithError error: Error?) {
+        let str = utf8LineParser.currentString
         utf8LineParser.closeAndReset()
         let currentRetry = eventParser.reset()
 
@@ -282,7 +283,7 @@ class EventSourceDelegate: NSObject, URLSessionDataDelegate {
                 if dispatchError(error: error) == .shutdown {
                     logger.log(.info, "Connection has been explicitly shut down by error handler")
                     if readyState == .open {
-                        config.handler.onClosed()
+                        config.handler.onClosed(str: str)
                     }
                     readyState = .shutdown
                     return
@@ -293,7 +294,7 @@ class EventSourceDelegate: NSObject, URLSessionDataDelegate {
         }
 
         if readyState == .open {
-            config.handler.onClosed()
+            config.handler.onClosed(str: str)
         }
 
         readyState = .closed
