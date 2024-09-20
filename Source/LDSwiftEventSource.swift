@@ -297,12 +297,12 @@ class EventSourceDelegate: NSObject, URLSessionDataDelegate {
         }
 
         readyState = .closed
-        let sleep = reconnectionTimer.reconnectDelay(baseDelay: currentRetry)
-        // this formatting shenanigans is to workaround String not implementing CVarArg on Swift<5.4 on Linux
-        logger.log(.info, "Waiting %@ seconds before reconnecting...", String(format: "%.3f", sleep))
-        delegateQueue.asyncAfter(deadline: .now() + sleep) { [weak self] in
-            self?.connect()
-        }
+//        let sleep = reconnectionTimer.reconnectDelay(baseDelay: currentRetry)
+//        // this formatting shenanigans is to workaround String not implementing CVarArg on Swift<5.4 on Linux
+//        logger.log(.info, "Waiting %@ seconds before reconnecting...", String(format: "%.3f", sleep))
+//        delegateQueue.asyncAfter(deadline: .now() + sleep) { [weak self] in
+//            self?.connect()
+//        }
     }
 
     // Tells the delegate that the data task received the initial reply (headers) from the server.
