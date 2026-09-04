@@ -10,33 +10,103 @@ on:
       - '**.md'
 
 jobs:
-  macos-build:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - xcode-version: 15.0.1
-            ios-sim: 'platform=iOS Simulator,name=iPhone 17,OS=17.0'
-            os: macos-13
-          - xcode-version: 14.3.1
-            ios-sim: 'platform=iOS Simulator,name=iPhone 16,OS=16.4'
-            os: macos-13
-          - xcode-version: 13.4.1
-            ios-sim: 'platform=iOS Simulator,name=iPhone 11,OS=15.5'
-            os: macos-12
+  lint:
+    runs-on: macos-15
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # If you only need the current version keep this.
 
-      - uses: ./.github/actions/ci
+      - uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd
         with:
-          xcode-version: ${{ matrix.xcode-version }}
-          ios-sim: ${{ matrix.ios-sim }}
+          xcode-version: 16.4
+
+      - uses: ./.github/actions/lint
+
+  build-ios:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd
+        with:
+          xcode-version: 16.4
+
+      - uses: ./.github/actions/build-ios
+        with:
+          ios-sim: 'platform=iOS Simulator,name=iPhone 16'
+
+  build-macos:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd
+        with:
+          xcode-version: 16.4
+
+      - uses: ./.github/actions/build-macos
+
+  build-tvos:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd
+        with:
+          xcode-version: 16.4
+
+      - uses: ./.github/actions/build-tvos
+
+  build-watchos:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd
+        with:
+          xcode-version: 16.4
+
+      - uses: ./.github/actions/build-watchos
+
+  test-swiftpm:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd
+        with:
+          xcode-version: 16.4
+
+      - uses: ./.github/actions/test-swiftpm
+
+  contract-tests:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd
+        with:
+          xcode-version: 16.4
+
+      - uses: ./.github/actions/contract-tests
+        with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-docs:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd
+        with:
+          xcode-version: 16.4
 
       - uses: ./.github/actions/build-docs
 
@@ -55,21 +125,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # If you only need the current version keep this.
 
       - name: Build and test
         run: swift test --enable-test-discovery
 
   windows-build:
-    name: Windows - Swift 5.9
+    name: Windows - Swift 6.1
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install Swift
         uses: compnerd/gha-setup-swift@cd348eb89f2f450b0664c07fb1cb66880addf17d
         with:
-          branch: swift-5.9-release
-          tag: 5.9-RELEASE
+          branch: swift-6.1-release
+          tag: 6.1-RELEASE
       - name: Build and test
         run: swift test
