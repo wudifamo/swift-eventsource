@@ -2,6 +2,17 @@
 
 All notable changes to the LaunchDarkly Swift EventSource library will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.4.0](https://github.com/wudifamo/swift-eventsource/compare/3.3.0...3.4.0) (2026-09-04)
+
+
+### Features
+
+* Add Compilation & Testing On Windows ([#68](https://github.com/wudifamo/swift-eventsource/issues/68)) ([ac5f18c](https://github.com/wudifamo/swift-eventsource/commit/ac5f18ccb5b197bbc9f37f9f799017a397eee43e))
+* adds ability to provide a OSLog instance via the Config.logger property ([c10ec29](https://github.com/wudifamo/swift-eventsource/commit/c10ec2936e77959f828a041b71ea56e454e39ff2))
+* adds ability to provide a OSLog instance via the Config.logger property ([#78](https://github.com/wudifamo/swift-eventsource/issues/78)) ([2220929](https://github.com/wudifamo/swift-eventsource/commit/2220929cbc98edd88e0e7d8b5ccb1f3992b4cf4f))
+* HTTP Status 204 should halt stream ([#59](https://github.com/wudifamo/swift-eventsource/issues/59)) ([e7d23e6](https://github.com/wudifamo/swift-eventsource/commit/e7d23e6d0dd1dce2f43806bbb8b191b559e29978))
+* Specify TLS v1.2 as required minimum ([#57](https://github.com/wudifamo/swift-eventsource/issues/57)) ([1980bcc](https://github.com/wudifamo/swift-eventsource/commit/1980bcc72a1594e5a0deff5899177c0f9934caad))
+
 ## [3.3.0](https://github.com/launchdarkly/swift-eventsource/compare/3.2.0...3.3.0) (2024-05-31)
 
 
