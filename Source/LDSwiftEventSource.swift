@@ -15,6 +15,10 @@ import os.log
 
  See the [Server-Sent Events spec](https://html.spec.whatwg.org/multipage/server-sent-events.html) for more details.
  */
+/// [Cx诊断] 最近一次 non-2xx 响应体（含后端业务错误码/提示）。由 EventSourceDelegate 在连接完成时写入，
+/// 供上层（CxChatEventHandler.onError）同步读取。KSwiftSse 默认在收到非 2xx 时立即取消连接、丢弃 body。
+public var CxSSELastErrorBody: String?
+
 public class EventSource {
     private let esDelegate: EventSourceDelegate
 
@@ -175,11 +179,15 @@ class EventSourceDelegate: NSObject, URLSessionDataDelegate {
         }
     }
 
-    private let utf8LineParser: UTF8LineParser = UTF8LineParser()
-    private let eventParser: EventParser
-    private let reconnectionTimer: ReconnectionTimer
-    private var urlSession: URLSession?
-    private var sessionTask: URLSessionDataTask?
+        private let utf8LineParser: UTF8LineParser = UTF8LineParser()
+        private let eventParser: EventParser
+        private let reconnectionTimer: ReconnectionTimer
+        private var urlSession: URLSession?
+        private var sessionTask: URLSessionDataTask?
+
+        // [Cx诊断] non-2xx 时缓存响应体，待连接完成后透传给上层（KSwiftSse 默认会在 .cancel 前丢弃 body）。
+        private var pendingError: UnsuccessfulResponseError?
+        private var errorBody = Data()
 
     init(config: EventSource.Config) {
         self.config = config
@@ -274,6 +282,22 @@ class EventSourceDelegate: NSObject, URLSessionDataDelegate {
         utf8LineParser.closeAndReset()
         let currentRetry = eventParser.reset()
 
+        // [Cx诊断] non-2xx 错误体透传：body 已缓存，先存全局再抛错（上层 onError 同步读取）。
+        if let capturedError = pendingError {
+            pendingError = nil
+            let bodyString = String(data: errorBody, encoding: .utf8) ?? ""
+            errorBody.removeAll()
+            CxSSELastErrorBody = bodyString
+            logger.log(.info, "Unsuccessful response body captured: %@", bodyString)
+            if dispatchError(error: capturedError) == .shutdown {
+                logger.log(.info, "Connection has been explicitly shut down by error handler")
+                readyState = .shutdown
+                return
+            }
+            readyState = .closed
+            return
+        }
+
         guard readyState != .shutdown
         else { return }
 
@@ -330,15 +354,18 @@ class EventSourceDelegate: NSObject, URLSessionDataDelegate {
         } else {
             // this formatting shenanigans is to workaround String not implementing CVarArg on Swift<5.4 on Linux
             logger.log(.info, "Unsuccessful response: %@", String(format: "%d", statusCode))
-            if dispatchError(error: UnsuccessfulResponseError(responseCode: statusCode)) == .shutdown {
-                logger.log(.info, "Connection has been explicitly shut down by error handler")
-                readyState = .shutdown
-            }
-            completionHandler(.cancel)
+            // [Cx诊断] non-2xx 时不再立即取消，改为允许 body 流进来并缓存，
+            // 待连接完成后把响应体透传给上层（KSwiftSse 默认在 .cancel 前丢弃 body，导致后端错误码/提示拿不到）。
+            pendingError = UnsuccessfulResponseError(responseCode: statusCode)
+            completionHandler(.allow)
         }
     }
 
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        utf8LineParser.append(data).forEach(eventParser.parse)
+        if let _ = pendingError {
+            errorBody.append(data)   // [Cx诊断] 缓存 non-2xx 错误体
+        } else {
+            utf8LineParser.append(data).forEach(eventParser.parse)
+        }
     }
 }
